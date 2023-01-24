@@ -3,6 +3,7 @@ using System.Text;
 using api.Data;
 using api.DTOs;
 using api.Entities;
+using api.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 namespace api.Controllers
@@ -10,12 +11,14 @@ namespace api.Controllers
     public class AccountController : BaseApiController
     {
         private readonly DataContext _context;
-        public AccountController(DataContext context)
+        private readonly ITokenService _tokenService;
+        public AccountController(DataContext context, ITokenService tokenService)
         {
+            _tokenService = tokenService;
             _context = context;
         }
         [HttpPost("register")] // api/account/register
-        public async Task<ActionResult<AppUser>> Register(RegisterDto registerDto)
+        public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
         {
             if (await UserExists(registerDto.Username)) return BadRequest("The user: " + registerDto.Username + " already exists");
 
@@ -28,11 +31,16 @@ namespace api.Controllers
             };
             _context.users.Add(user);
             await _context.SaveChangesAsync();
-            return user;
+
+            return new UserDto
+            {
+                Username = user.UserName,
+                Token = _tokenService.CreateToken(user)
+            };
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<AppUser>> Login(LoginDto loginDto)
+        public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
         {
             // Authentication Process
             var user = await _context.users.SingleOrDefaultAsync(x => x.UserName == loginDto.Username);
@@ -47,7 +55,11 @@ namespace api.Controllers
             {
                 if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("Invalid password");
             }
-            return user;
+            return new UserDto
+            {
+                Username = user.UserName,
+                Token = _tokenService.CreateToken(user)
+            };
         }
         private async Task<bool> UserExists(string username)
         {
