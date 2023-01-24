@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
-    <Nullable>disable</Nullable>
+    <Nullable>disable</Nullable> <!-- We can Validate String here -->
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
